@@ -1,6 +1,6 @@
 # AI-assignment-V-sem
 
 ## Participants
-Abhishek Patil
-Devjit
-Anupam kumar Singh
+1. Abhishek Patil
+2. Devjit
+3. Anupam kumar Singh
