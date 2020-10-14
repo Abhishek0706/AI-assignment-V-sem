@@ -20,7 +20,9 @@ def to_parse(path):
     rootTree=tree.getroot()
     val_to_ret=[]
     for words in rootTree.iter('w'):
-        val_to_ret.append([words.text,words.attrib.get('c5'),words.attrib.get('hw'),words.attrib.get('pos')])
+        li=list(words.attrib.get('c5').split("-"));
+        for c5word in li:
+            val_to_ret.append([words.text,c5word,words.attrib.get('hw'),words.attrib.get('pos')])
 
     return val_to_ret
 
