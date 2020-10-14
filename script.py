@@ -22,7 +22,12 @@ def to_parse(path):
     for words in rootTree.iter('w'):
         li=list(words.attrib.get('c5').split("-"));
         for c5word in li:
-            val_to_ret.append([words.text,c5word,words.attrib.get('hw'),words.attrib.get('pos')])
+            val_to_ret.append([words.text.strip(),c5word.strip()])
+
+    for words in rootTree.iter('c'):
+        li=list(words.attrib.get('c5').split("-"));
+        for c5word in li:
+            val_to_ret.append([words.text.strip(),c5word.strip()])
 
     return val_to_ret
 
