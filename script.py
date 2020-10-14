@@ -41,6 +41,10 @@ def create_dict(wordList):
     return [dict_word,dict_cnt_word,dict_cnt_c5];
 
 
+def cmp(aa):
+    return aa[1]
+
+
 
 def main():
 
@@ -61,6 +65,8 @@ def main():
     for key in dict_list[2]:
         posCount.append([key,dict_list[2][key]])
 
+    wordCount.sort(reverse=True,key=cmp)
+    posCount.sort(reverse=True, key=cmp)
 
     file: TextIO
     with io.open('./readableFormat.csv','w',encoding='utf-8') as file:
@@ -75,12 +81,14 @@ def main():
     file: TextIO
     with io.open('./wordCount.csv', 'w', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerows(wordCount)
+        for x in range(0,10):
+            writer.writerow(wordCount[x])
 
     file: TextIO
     with io.open('./posCount.csv', 'w', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerows(posCount)
+        for x in range(0,10):
+            writer.writerow(posCount[x])
 
 
 
