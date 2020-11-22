@@ -10,8 +10,8 @@ import csv
 import os
 import io
 
-trainFolder = './Train-corups/A1'
-testFolder = './Test-corpus/AN'
+trainFolder = './Train-corups'
+testFolder = './Test-corpus'
 frequency_list_train = []
 wordCount_list_train = []
 tagCount_list_train = []
