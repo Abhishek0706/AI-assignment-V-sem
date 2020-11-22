@@ -5,6 +5,7 @@ from typing import TextIO
 import seaborn as sn
 import pandas as pd
 import numpy as np
+import random
 import csv
 import os
 import io
@@ -136,13 +137,13 @@ def create_predicted_dictionary():
 def create_confusion_matrix():
     global total_test
     global correct
-    print("creating confusion matrinx....")
-
+    print("creating confusion matrix....")
+    random.shuffle(tagCount_list_train)
     # initialising confusion matrix
     n = len(tagCount_list_train)
-    for i in range(n):
+    for _ in range(n):
         temp = []
-        for j in range(n):
+        for __ in range(n):
             temp.append(0);
         confusion_matrix.append(temp)
 
@@ -166,22 +167,26 @@ def create_confusion_matrix():
         else:
             new_word_fount += 1
             # print("new word found : " + t_word)
-    print("correct, total test, new word found are")
-    print(correct)
-    print(total_test)
+    print("new word found are", end=" : ")
     print(new_word_fount)
 
 def plot_confusion_matrix():
     row = []
+    col = []
     for i in index:
         row.append(i)
-    # we have confusion matrix as 2d array and row as the list of tags 
+        col.append(i)
+
+    # we have confusion matrix as 2d array and row as the list of tags
     df_cm = pd.DataFrame(confusion_matrix, index = [i for i in row],
-                    columns = [i for i in row])
-    plt.figure(figsize = (10,7))
-    sn.heatmap(df_cm,cmap="Oranges", annot=False, )
+                    columns = [j for j in col])
+
+
+    sn.heatmap(df_cm, annot=False,xticklabels=True, yticklabels=True)
+    plt.xticks(fontsize = 4)
+    plt.yticks(fontsize = 4)
     plt.savefig('plot.png')
-    plt.show()
+    # plt.show()
 
 # MAIN METHOD
 print("reading train files....")
