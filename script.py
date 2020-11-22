@@ -184,30 +184,26 @@ def plot_confusion_matrix():
     plt.show()
 
 # MAIN METHOD
-def main():
-    print("reading train files....")
-    word_tag_list_train = readFile(trainFolder)
+print("reading train files....")
+word_tag_list_train = readFile(trainFolder)
 
-    create_readable_format()
+create_readable_format()
 
-    print("arranging data....")
-    [word_tag_cnt_dict_train, word_cnt_dict_train, tag_cnt_dict_train] = create_dict(word_tag_list_train)
+print("arranging data....")
+[word_tag_cnt_dict_train, word_cnt_dict_train, tag_cnt_dict_train] = create_dict(word_tag_list_train)
 
-    create_frequency_list()
+create_frequency_list()
 
-    create_word_count_list()
+create_word_count_list()
 
-    create_tag_count_list()
+create_tag_count_list()
 
-    print("reading test files....")
-    word_tag_list_test = readFile(testFolder)
+print("reading test files....")
+word_tag_list_test = readFile(testFolder)
 
-    create_predicted_dictionary()
+create_predicted_dictionary()
 
-    create_confusion_matrix()
+create_confusion_matrix()
 
-    plot_confusion_matrix()
+plot_confusion_matrix()
 
-
-if __name__ == '__main__':
-    main()
