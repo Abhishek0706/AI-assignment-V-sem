@@ -10,8 +10,8 @@ import csv
 import os
 import io
 
-trainFolder = './Train-corups'
-testFolder = './Test-corpus'
+trainFolder = './Train-corups/A1'
+testFolder = './Test-corpus/AN'
 frequency_list_train = []
 wordCount_list_train = []
 tagCount_list_train = []
@@ -182,11 +182,11 @@ def plot_confusion_matrix():
                     columns = [j for j in col])
 
 
-    sn.heatmap(df_cm, annot=False,xticklabels=True, yticklabels=True)
-    plt.xticks(fontsize = 4)
-    plt.yticks(fontsize = 4)
-    plt.savefig('plot.png')
-    # plt.show()
+    plt.figure(figsize=(15, 10.5))
+    sn.set(font_scale=0.8)
+    sn.heatmap(df_cm)
+    plt.title('Confusion matrix')
+    plt.show()
 
 # MAIN METHOD
 print("reading train files....")
