@@ -23,20 +23,25 @@ reading_train = True
 A = {} #count of (tag1->tag2)
 B = {} # count of tag,word
 tag_count = {} # count of tag
-word_tag_count = {}
+word_tag_count = defaultdict(dict)
 Pi = {}
 tot_Pi = 0
+
+tag_list = []
+word_cnt = 0
+
 
 def readFile(path):
     for fname in os.listdir(path):
         if os.path.isdir(os.path.join(path, fname)):
-            print(os.path.join(path, fname))
+            print("reading ", os.path.join(path, fname))
             readFile(os.path.join(path, fname))
         else:
             parseFile(os.path.join(path, fname))
 
 
 def parseFile(path):
+
     tree = ET.parse(path)
     rootTree = tree.getroot()
 
@@ -45,6 +50,7 @@ def parseFile(path):
 
 
 def parseSentence(root):
+
     global reading_train
     my_sent = []
     for word in root:
@@ -57,19 +63,21 @@ def parseSentence(root):
 
 
 def parseWord(root):
+    global word_cnt
     val_to_ret = []
     if len(list(root)):
         for child in root:
             val_to_ret.extend(parseWord(child))
     else:
         try:
-            val_to_ret.append([root.text.strip(),root.attrib.get('c5')])
+            val_to_ret.append([root.text.strip(),root.attrib.get('c5').split("-")[0]])
+            word_cnt += 1
         except:
             None
     return val_to_ret
 
-
 def viterbi_train(sentence):
+
     global tot_Pi
     n = len(sentence)
     for i in range(0, n):
@@ -103,10 +111,14 @@ def viterbi_train(sentence):
             tag_count[t] = 1
 
         # associate tag with word
-        if (w,t) in word_tag_count :
-            word_tag_count[w,t] += 1
-        else:
-            word_tag_count[w,t] =  1
+        if w in word_tag_count:
+            if t in word_tag_count[w]:
+                word_tag_count[w][t] += 1
+            else :
+                word_tag_count[w][t] = 1
+        else :
+            word_tag_count[w][t] = 1
+
 
 # prob og tag2 given prev tag = tag 1
 def trans_prob(tag1, tag2):
@@ -115,9 +127,9 @@ def trans_prob(tag1, tag2):
     return 0.0
 
 
-def emmis_prob(word,tag):
-    if (word,tag) in B :
-        return (1.0 * B[word,tag]) / (tag_count[tag])
+def emmis_prob(tag,word):
+    if (tag,word) in B :
+        return (1.0 * B[tag,word]) / (1.0 * tag_count[tag])
     return 0.0
 
 
@@ -151,12 +163,13 @@ def viterbi_test(sentence):
     for i in range(0,n):
         tags = get_tags(word[i])
         if i == 0:
-            p = start_prob(tag)
-            dp[i,tag] = p
+            for tag in tags:
+                p = start_prob(tag) * emmis_prob(tag,word[i])
+                dp[i,tag] = p
         else:
             for tag in tags:
                 for prev_tag in prev:
-                    p = dp[i-1, prev_tag] * trans_prob(prev_tag,tag) * emmis_prob(word[i],tag)
+                    p = dp[i-1, prev_tag] * trans_prob(prev_tag,tag) * emmis_prob(tag,word[i])
                     if p >= dp[i,tag]:
                         dp[i,tag]  = p
                         track[i,tag] = prev_tag
@@ -167,9 +180,7 @@ def viterbi_test(sentence):
     max_prob = 0.0
     max_tag = ""
     prev_tag = ""
-    
-    if(n<1):
-        return
+
 
     if n == 1:
         for tag in get_tags(word[n-1]):
@@ -202,7 +213,7 @@ def viterbi_test(sentence):
     total_test += n
 
     for i in range(0,n):
-        if calc[i] == t_tag[i]:
+        if calc[i] in list(t_tag[i].split("-")):
             correct += 1
 
 
@@ -214,6 +225,8 @@ def get_tags(word):
 
     if len(val_to_ret) == 0:
         val_to_ret.append("NN1")
+        # TODO : iska kuch karna pdega.....kuki us stage ki saari prob 0 ho rhi hai
+
     return val_to_ret
 
 
@@ -224,14 +237,17 @@ readFile(trainFolder)
 
 reading_train = False
 
+# -------------------------creating tag list ---------------------------------
+for t in tag_count:
+    tag_list.append(t)
+
 # ---------------------------test our model----------------------------------
 readFile(testFolder)
-
-print(correct)
-print(total_test)
 
 accuracy = (1.0 * correct) / (1.0 * total_test)
 
 print(accuracy)
+
+# -----------------------------------------------------------------------------
 
 print("--- %s seconds ---" % (time.time() - start_time))
