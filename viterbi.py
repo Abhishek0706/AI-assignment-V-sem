@@ -128,6 +128,10 @@ def trans_prob(tag1, tag2):
 
 
 def emmis_prob(tag,word):
+    # new word hai
+    if word not in word_tag_count:
+        return 1.0
+
     if (tag,word) in B :
         return (1.0 * B[tag,word]) / (1.0 * tag_count[tag])
     return 0.0
@@ -224,8 +228,7 @@ def get_tags(word):
             val_to_ret.append(tag)
 
     if len(val_to_ret) == 0:
-        val_to_ret.append("NN1")
-        # TODO : iska kuch karna pdega.....kuki us stage ki saari prob 0 ho rhi hai
+        val_to_ret.extend(tag_list)
 
     return val_to_ret
 
