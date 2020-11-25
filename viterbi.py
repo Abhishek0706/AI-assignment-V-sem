@@ -18,17 +18,19 @@ testFolder = './Test-corpus'
 
 correct = 0
 total_test = 0
+norm = 0
 reading_train = True
 
-A = {} #count of (tag1->tag2)
-B = {} # count of tag,word
-tag_count = {} # count of tag
-word_tag_count = defaultdict(dict)
-Pi = {}
+A = {}  # count of (tag1->tag2)
+B = {}  # count of tag,word
+tag_count = {}  # count of tag
+word_tag_count = defaultdict(dict) # {word : {tag : count}}
+Pi = {} # starting probability
 tot_Pi = 0
 
 tag_list = []
-word_cnt = 0
+confusion_matrix = []
+index = {}
 
 
 def readFile(path):
@@ -63,18 +65,18 @@ def parseSentence(root):
 
 
 def parseWord(root):
-    global word_cnt
     val_to_ret = []
     if len(list(root)):
         for child in root:
             val_to_ret.extend(parseWord(child))
     else:
         try:
-            val_to_ret.append([root.text.strip(),root.attrib.get('c5').split("-")[0]])
-            word_cnt += 1
+            val_to_ret.append(
+                [root.text.strip(), root.attrib.get('c5').split("-")[0]])
         except:
             None
     return val_to_ret
+
 
 def viterbi_train(sentence):
 
@@ -100,40 +102,40 @@ def viterbi_train(sentence):
                 A[prev_t, t] = 1
 
         # training emmission prob
-        if (t,w) in B:
-            B[t,w] += 1
-        else :
-            B[t,w] = 1
-        
+        if (t, w) in B:
+            B[t, w] += 1
+        else:
+            B[t, w] = 1
+
         if t in tag_count:
-            tag_count[t] +=1 
-        else :
+            tag_count[t] += 1
+        else:
             tag_count[t] = 1
 
         # associate tag with word
         if w in word_tag_count:
             if t in word_tag_count[w]:
                 word_tag_count[w][t] += 1
-            else :
+            else:
                 word_tag_count[w][t] = 1
-        else :
+        else:
             word_tag_count[w][t] = 1
 
 
 # prob og tag2 given prev tag = tag 1
 def trans_prob(tag1, tag2):
-    if (tag1,tag2) in A:
+    if (tag1, tag2) in A:
         return (1.0 * A[tag1, tag2]) / (1.0 * tag_count[tag1])
     return 0.0
 
 
-def emmis_prob(tag,word):
+def emmis_prob(tag, word):
     # new word hai
     if word not in word_tag_count:
         return 1.0
 
-    if (tag,word) in B :
-        return (1.0 * B[tag,word]) / (1.0 * tag_count[tag])
+    if (tag, word) in B:
+        return (1.0 * B[tag, word]) / (1.0 * tag_count[tag])
     return 0.0
 
 
@@ -145,7 +147,7 @@ def start_prob(tag):
 
 
 def viterbi_test(sentence):
-    
+
     word = []
     t_tag = []
     for i in sentence:
@@ -156,27 +158,28 @@ def viterbi_test(sentence):
 
     dp = {}
     track = {}
-    prev = [] 
+    prev = []
 
-    for i in range(0,n):
+    for i in range(0, n):
         tags = get_tags(word[i])
         for tag in tags:
-            dp[i,tag] = 0.0 #initialising dp
-            track[i,tag] = "NN1"
+            dp[i, tag] = 0.0  # initialising dp
+            track[i, tag] = "NN1"
 
-    for i in range(0,n):
+    for i in range(0, n):
         tags = get_tags(word[i])
         if i == 0:
             for tag in tags:
-                p = start_prob(tag) * emmis_prob(tag,word[i])
-                dp[i,tag] = p
+                p = start_prob(tag) * emmis_prob(tag, word[i])
+                dp[i, tag] = p
         else:
             for tag in tags:
                 for prev_tag in prev:
-                    p = dp[i-1, prev_tag] * trans_prob(prev_tag,tag) * emmis_prob(tag,word[i])
-                    if p >= dp[i,tag]:
-                        dp[i,tag]  = p
-                        track[i,tag] = prev_tag
+                    p = dp[i-1, prev_tag] * \
+                        trans_prob(prev_tag, tag) * emmis_prob(tag, word[i])
+                    if p >= dp[i, tag]:
+                        dp[i, tag] = p
+                        track[i, tag] = prev_tag
 
         prev = tags
 
@@ -184,7 +187,6 @@ def viterbi_test(sentence):
     max_prob = 0.0
     max_tag = ""
     prev_tag = ""
-
 
     if n == 1:
         for tag in get_tags(word[n-1]):
@@ -216,9 +218,16 @@ def viterbi_test(sentence):
 
     total_test += n
 
-    for i in range(0,n):
+    # ! predicted tag calc[i] hai lakin jo real tag hai test file me vo multiple
+    # ! ho sakte hai to unme se kisme se confusion matrix me add karna hai
+    # ! confusion_matrix[predicted][actual] 
+
+    for i in range(0, n):
         if calc[i] in list(t_tag[i].split("-")):
             correct += 1
+            confusion_matrix[index[calc[i]]][index[calc[i]]] += 1
+        else:
+            confusion_matrix[index[calc[i]]][index[t_tag[i].split("-")[0]]] += 1
 
 
 def get_tags(word):
@@ -233,6 +242,63 @@ def get_tags(word):
     return val_to_ret
 
 
+def calculate_accuracy():
+    global norm
+    print("\n------------------")
+    accuracy = (100.0 * correct) / (1.0 * total_test)
+    print("accuracy: ", "{:.2f}".format(accuracy), "%")
+
+
+    f1_avg = 0.0
+    f1_wt = 0.0
+    n = len(confusion_matrix)
+    for i in range(n):
+        c = confusion_matrix[i][i]
+        pre = 0
+        rec = 0
+        for j in range(n):
+            pre += confusion_matrix[i][j]
+            rec += confusion_matrix[j][i]
+            norm = max(norm,confusion_matrix[i][j])
+        precision = (1.0*c)/(1.0 *pre)
+        recall = (1.0*c)/(1.0 *rec)
+        f1 = (2 * precision * recall)/(precision + recall)
+        f1_avg += f1
+        f1_wt += rec * f1
+
+    f1_avg = 100 * f1_avg/n
+    print("Average F1 :", "{:.2f}".format(f1_avg), "%")
+
+    f1_wt = 100 * f1_wt/total_test
+    print("Weighted F1 :", "{:.2f}".format(f1_wt), "%")
+
+    print("------------------\n")
+
+
+def plot_confusion_matrix():
+    row = []
+    col = []
+    for i in index:
+        row.append(i)
+        col.append(i)
+
+    normalised = []
+
+    for i in confusion_matrix:
+        temp = []
+        for j in i:
+            temp.append(1.0*j/norm)
+        normalised.append(temp)
+
+    df_cm = pd.DataFrame(normalised, index=[i for i in row], columns=[j for j in col])
+
+    plt.figure(figsize=(15, 10.5))
+    sn.set(font_scale=0.8)
+    sn.heatmap(df_cm)
+    plt.title('Confusion matrix')
+    plt.savefig("viterbi_plot.png")
+
+
 # ---------------------------- MAIN METHOD------------------------------------
 
 #  ------------------------train our model ----------------------------------
@@ -244,13 +310,33 @@ reading_train = False
 for t in tag_count:
     tag_list.append(t)
 
+# -------------------------initialise confusion matrix-----------------------
+for _ in range(len(tag_list)):
+    temp = []
+    for __ in range(len(tag_list)):
+        temp.append(0)
+    confusion_matrix.append(temp)
+
+random.shuffle(tag_list)
+ii = 0
+for tt in tag_list:
+    index[tt] = ii
+    ii += 1
+
 # ---------------------------test our model----------------------------------
+
 readFile(testFolder)
 
-accuracy = (1.0 * correct) / (1.0 * total_test)
+# ---------------------------calculating accuracy----------------------------
 
-print(accuracy)
+calculate_accuracy()
 
-# -----------------------------------------------------------------------------
+# --------------------------plot confusion matrix--------------------------
 
-print("--- %s seconds ---" % (time.time() - start_time))
+plot_confusion_matrix() #also calculation norm with this
+
+# -----------------------------calculating time--------------------------------
+
+print("%s seconds " % (time.time() - start_time))
+
+# --------------------------------THE END-----------------------------------
